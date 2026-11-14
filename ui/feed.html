@@ -4,352 +4,432 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dog Council Feed</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 /*
-  Agent council feed for the robodog showcase.
-  Layout only: events come from SAMPLE_EVENTS below. See ui/README.md for the
-  event shape and how this will be wired to the agents' JSONL logs later.
+  Agent council feed for the robodog showcase, laid out like the desktop X timeline.
+  Layout only: events come from SAMPLE_EVENTS below. See ui/README.md.
 */
 :root {
-  --bg: #e6ecf1;
-  --panel: #ffffff;
-  --ink: #142230;
-  --ink-soft: #4d5e6e;
-  --line: #cfd9e2;
-  --floor: #f4f7fa;
-  --grid: #dbe3ea;
+  --bg: #000000;
+  --text: #e7e9ea;
+  --muted: #71767b;
+  --border: #2f3336;
+  --blue: #1d9bf0;
+  --blue-hover: #1a8cd8;
+  --green: #00ba7c;
+  --pink: #f91880;
+  --light: #eff3f4;
+  --dark-text: #0f1419;
+  --hover: rgba(231, 233, 234, 0.1);
+  --row-hover: rgba(255, 255, 255, 0.03);
+  --header-bg: rgba(0, 0, 0, 0.65);
 
-  --planner: #3346c4;
-  --scout: #0b8379;
-  --safety: #b8213a;
-  --pilot: #7a3db5;
-  --scribe: #5a6a1e;
-  --system: #4d5e6e;
+  --nav-w: 275px;
+  --main-w: 600px;
+  --side-w: 350px;
+  --side-gap: 30px;
 
-  --radius-lg: 18px;
-  --radius-sm: 8px;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0f1820; --panel: #17232e; --ink: #e8eef3; --ink-soft: #9fb0bf;
-    --line: #2a3a49; --floor: #13202a; --grid: #223240;
-    --planner: #8a98ff; --scout: #3fc9b9; --safety: #ff7088; --pilot: #c39bff; --scribe: #b9cc6a; --system: #9fb0bf;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0f1820; --panel: #17232e; --ink: #e8eef3; --ink-soft: #9fb0bf;
-  --line: #2a3a49; --floor: #13202a; --grid: #223240;
-  --planner: #8a98ff; --scout: #3fc9b9; --safety: #ff7088; --pilot: #c39bff; --scribe: #b9cc6a; --system: #9fb0bf;
+  --planner: #7856ff;
+  --scout: #00ba7c;
+  --safety: #f4212e;
+  --pilot: #1d9bf0;
+  --scribe: #ffd400;
+  --system: #e7e9ea;
+
+  --font: "TwitterChirp", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; }
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font: 17px/1.5 "Atkinson Hyperlegible", system-ui, sans-serif;
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font: 15px/20px var(--font); -webkit-font-smoothing: antialiased; overflow-y: scroll; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+input, textarea { font: inherit; color: inherit; }
+a { color: var(--blue); text-decoration: none; cursor: pointer; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+svg.i { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.i.fill { fill: currentColor; stroke: none; }
+.muted { color: var(--muted); }
+.bold { font-weight: 700; }
+
+/* ─── three columns ─────────────────────────────────────────── */
+.layout { display: flex; justify-content: center; min-height: 100vh; }
+.nav-col { width: var(--nav-w); flex: none; }
+.nav-inner {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column;
+  padding: 0 8px; overflow-y: auto;
+}
+.main-col {
+  width: var(--main-w); flex: none;
+  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
   min-height: 100vh;
 }
-h1, h2, .display { font-family: "Bricolage Grotesque", system-ui, sans-serif; }
-button { font: inherit; color: inherit; }
-:focus-visible { outline: 3px solid var(--planner); outline-offset: 2px; border-radius: 6px; }
+.side-col { width: var(--side-w); margin-left: var(--side-gap); margin-right: 10px; flex: none; }
 
-/* ── page frame ─────────────────────────────────────────────── */
-.app {
-  display: grid;
-  grid-template-columns: 280px minmax(0, 620px) minmax(320px, 1fr);
-  gap: 20px;
-  max-width: 1480px;
-  margin: 0 auto;
-  padding: 20px;
-  align-items: start;
+/* ─── left nav ──────────────────────────────────────────────── */
+.logo { width: 52px; height: 52px; margin-top: 2px; border-radius: 9999px; display: grid; place-items: center; color: var(--text); }
+.logo:hover { background: var(--hover); }
+.logo svg { width: 30px; height: 30px; }
+.nav { display: flex; flex-direction: column; margin-top: 2px; }
+.nav-item { display: flex; padding: 0; color: var(--text); }
+.nav-item:hover { text-decoration: none; }
+.nav-item > span {
+  display: inline-flex; align-items: center; gap: 20px;
+  padding: 12px; border-radius: 9999px;
+  font-size: 20px; line-height: 24px;
+  transition: background-color .2s;
 }
-.rail { position: sticky; top: 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; }
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  padding: 18px 20px;
+.nav-item:hover > span { background: var(--hover); }
+.nav-item .label { padding-right: 16px; }
+.nav-item.active { font-weight: 700; }
+.nav-item svg.i { width: 26.25px; height: 26.25px; stroke-width: 1.9; }
+.nav-item.active svg.i { stroke-width: 2.6; }
+.nav-item.active svg.i.fill { stroke-width: 0; }
+.nav-icon { position: relative; display: inline-flex; }
+.badge {
+  position: absolute; top: -6px; right: -6px;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 9999px; border: 1px solid var(--bg);
+  background: var(--blue); color: #fff;
+  font-size: 11px; line-height: 16px; font-weight: 700; text-align: center;
 }
-.panel h2 { font-size: 1.05rem; font-weight: 700; margin: 0 0 12px; }
+.btn-post-big {
+  width: 90%; height: 52px; margin: 16px 0;
+  border-radius: 9999px; background: var(--light); color: var(--dark-text);
+  font-size: 17px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.btn-post-big:hover { background: #d7dbdc; }
+.btn-post-big svg { display: none; width: 24px; height: 24px; }
+.account {
+  margin: auto 0 12px; padding: 12px; border-radius: 9999px;
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+}
+.account:hover { background: var(--hover); }
+.account .who { flex: 1; min-width: 0; line-height: 20px; }
+.account .who div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ── left rail: mission + agents ───────────────────────────── */
-.mission-goal {
-  font-family: "Bricolage Grotesque", system-ui, sans-serif;
-  font-size: 1.6rem; line-height: 1.15; font-weight: 800;
-  margin: 0 0 14px;
-}
-.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: step; }
-.steps li {
-  counter-increment: step;
-  display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: center;
-  padding: 6px 0; color: var(--ink-soft);
-}
-.steps li::before {
-  content: counter(step);
-  width: 26px; height: 26px; border-radius: 50%;
+/* ─── avatars ───────────────────────────────────────────────── */
+.av {
+  width: 40px; height: 40px; border-radius: 9999px; flex: none;
   display: grid; place-items: center;
-  border: 2px solid var(--line); font-size: .8rem; font-weight: 700;
+  background: var(--c, var(--system)); color: #000;
+  font-weight: 800; font-size: 17px;
 }
-.steps li.active { color: var(--ink); font-weight: 700; }
-.steps li.active::before { border-color: var(--ink); }
-.steps li.done { color: var(--ink); }
-.steps li.done::before { content: "✓"; background: var(--ink); border-color: var(--ink); color: var(--panel); }
-
-.agents { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-.agents li { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: center; }
-.agents .who { font-weight: 700; line-height: 1.2; }
-.agents .what { color: var(--ink-soft); font-size: .88rem; line-height: 1.3; }
-.agents li.speaking .avatar { box-shadow: 0 0 0 3px var(--panel), 0 0 0 5px var(--c); }
-
-.avatar {
-  --c: var(--system);
-  width: 40px; height: 40px; border-radius: 12px;
-  background: var(--c); color: #fff;
-  display: grid; place-items: center;
-  font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 800; font-size: 1.15rem;
-  flex: none;
-}
-:root[data-theme="dark"] .avatar { color: #0f1820; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .avatar { color: #0f1820; } }
-.avatar.lg { width: 48px; height: 48px; border-radius: 14px; font-size: 1.35rem; }
-
+.av svg { width: 60%; height: 60%; }
+.av.s32 { width: 32px; height: 32px; font-size: 14px; }
+.av.s20 { width: 20px; height: 20px; font-size: 10px; border: 1px solid var(--bg); }
+.av.s134 { width: 134px; height: 134px; font-size: 56px; border: 4px solid var(--bg); }
 [data-agent="planner"] { --c: var(--planner); }
-[data-agent="scout"]   { --c: var(--scout); }
-[data-agent="safety"]  { --c: var(--safety); }
-[data-agent="pilot"]   { --c: var(--pilot); }
-[data-agent="scribe"]  { --c: var(--scribe); }
-[data-agent="system"]  { --c: var(--system); }
+[data-agent="scout"] { --c: var(--scout); }
+[data-agent="safety"] { --c: var(--safety); }
+[data-agent="pilot"] { --c: var(--pilot); }
+[data-agent="scribe"] { --c: var(--scribe); }
+[data-agent="system"] { --c: var(--system); }
+svg.i.verified { width: 18.75px; height: 18.75px; color: var(--blue); margin-left: 2px; vertical-align: -4px; }
 
-/* ── center: feed ──────────────────────────────────────────── */
-.feed-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 14px 20px;
-  position: sticky; top: 0; z-index: 2;
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--line);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+/* ─── sticky headers + tabs ─────────────────────────────────── */
+.top {
+  position: sticky; top: 0; z-index: 3;
+  background: var(--header-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
 }
-.feed-head h1 { font-size: 1.35rem; margin: 0; font-weight: 800; }
-.live { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: .9rem; color: var(--safety); }
-.live::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
-.live.paused { color: var(--ink-soft); }
-.live:not(.paused)::before { animation: pulse 1.6s ease-in-out infinite; }
-@keyframes pulse { 50% { opacity: .25; } }
-
-.controls { display: flex; gap: 6px; }
-.controls button {
-  border: 1px solid var(--line); background: var(--panel);
-  border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: .9rem; font-weight: 700;
+.title-bar { display: flex; align-items: center; gap: 4px; min-height: 53px; padding: 0 16px; }
+.title-bar h2 { font-size: 20px; line-height: 24px; font-weight: 700; margin: 0; }
+.title-bar .sub { font-size: 13px; line-height: 16px; color: var(--muted); }
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 9999px;
+  display: inline-grid; place-items: center; flex: none;
 }
-.controls button:hover { border-color: var(--ink-soft); }
-.controls button[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.icon-btn:hover { background: var(--hover); }
+.icon-btn svg { width: 20px; height: 20px; }
+.back { margin-right: 28px; margin-left: -8px; }
+.tabs { display: flex; height: 53px; }
+.tabs.bordered { border-bottom: 1px solid var(--border); }
+.tab {
+  flex: 1; display: flex; justify-content: center;
+  color: var(--muted); font-weight: 500;
+}
+.tab:hover { background: var(--hover); }
+.tab > span { position: relative; display: flex; align-items: center; height: 100%; }
+.tab.active { color: var(--text); font-weight: 700; }
+.tab-plus { flex: none; width: 53px; display: grid; place-items: center; color: var(--text); }
+.tab-plus:hover { background: var(--hover); }
+.tab-plus svg { width: 20px; height: 20px; }
+.tab.active > span::after {
+  content: ""; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  min-width: 56px; width: 100%; height: 4px; border-radius: 9999px; background: var(--blue);
+}
 
-.feed-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); }
-.feed { list-style: none; margin: 0; padding: 0; }
-.empty { padding: 40px 20px; color: var(--ink-soft); text-align: center; }
+/* ─── compose ───────────────────────────────────────────────── */
+.compose { display: flex; gap: 8px; padding: 4px 16px 0; border-bottom: 1px solid var(--border); }
+.compose .av { margin-top: 12px; }
+.compose-body { flex: 1; min-width: 0; padding-top: 4px; }
+.compose textarea {
+  width: 100%; resize: none; border: 0; outline: none; background: none;
+  font-size: 20px; line-height: 24px; padding: 12px 0; height: 52px; overflow: hidden;
+}
+.compose textarea::placeholder { color: var(--muted); }
+.compose-tools { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 12px; margin-left: -8px; }
+.compose-tools .icons { display: flex; }
+.compose-tools .icon-btn { color: var(--text); opacity: .85; }
+.compose-tools .icon-btn:hover { background: rgba(29, 155, 240, .1); }
+.btn-pill {
+  height: 36px; padding: 0 16px; border-radius: 9999px;
+  font-weight: 700; font-size: 15px; flex: none;
+}
+.btn-light { background: var(--light); color: var(--dark-text); }
+.btn-light:hover { background: #d7dbdc; }
+.btn-light:disabled { opacity: .5; cursor: default; }
+.btn-blue { background: var(--blue); color: #fff; }
+.btn-blue:hover { background: var(--blue-hover); }
+.btn-outline { border: 1px solid #536471; color: var(--text); }
+.btn-outline:hover { background: var(--hover); }
+.btn-sm { height: 32px; font-size: 14px; }
 
+/* ─── posts ─────────────────────────────────────────────────── */
 .post {
-  display: grid; grid-template-columns: 48px 1fr; gap: 12px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--line);
+  display: flex; gap: 8px; padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background-color .2s;
+}
+.post:hover { background: var(--row-hover); }
+.post.is-new { animation: arrive 1.2s ease-out; }
+@keyframes arrive { from { background: rgba(29, 155, 240, .12); } }
+.post-body { flex: 1; min-width: 0; }
+.post-head { display: flex; align-items: flex-start; gap: 4px; }
+.post-head .meta { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.post-head .name { font-weight: 700; color: var(--text); }
+.post-head .dots { margin: -8px -8px -8px 0; color: var(--muted); }
+.post-head .dots:hover { color: var(--blue); background: rgba(29, 155, 240, .1); }
+.replying { color: var(--muted); }
+.post-text { white-space: pre-line; overflow-wrap: anywhere; }
+.post-text b { font-weight: 700; }
+.kind-tag { color: var(--muted); }
+.kind-tag.veto { color: var(--pink); font-weight: 700; }
+
+.card {
+  margin-top: 12px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+}
+.card .code {
+  padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px; line-height: 20px; border-bottom: 1px solid var(--border);
+}
+.card .frame {
+  aspect-ratio: 16 / 9; background: #16181c; border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-end; padding: 12px; color: var(--muted);
   position: relative;
 }
-.post:last-child { border-bottom: 0; }
-.post.is-new { animation: arrive .5s ease-out; }
-@keyframes arrive { from { background: color-mix(in srgb, var(--c) 14%, var(--panel)); } }
-.post:hover, .post.hl { background: color-mix(in srgb, var(--c) 6%, var(--panel)); }
+.card .frame::before { content: ""; position: absolute; inset: 52% 0 0; background: #202327; }
+.card .frame span { position: relative; }
+.card .result { padding: 12px; color: var(--muted); }
+.card .result.bad { color: var(--pink); font-weight: 700; }
+.quote { padding: 12px; }
+.quote .qhead { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
+.quote .qhead svg.i.verified { margin-left: 0; vertical-align: 0; }
 
-.byline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
-.byline .name { font-weight: 700; }
-.byline .handle, .byline time { color: var(--ink-soft); font-size: .92rem; }
-.kind {
-  font-size: .78rem; font-weight: 700; padding: 1px 8px; border-radius: 999px;
-  background: color-mix(in srgb, var(--c) 14%, var(--panel)); color: var(--c);
-}
-.kind[data-kind="objection"] { background: var(--safety); color: var(--panel); }
-.reply-to { color: var(--ink-soft); font-size: .92rem; margin-top: 2px; }
-.reply-to b { color: var(--planner); font-weight: 400; }
-.text { margin: 4px 0 0; white-space: pre-line; }
-.text b { font-weight: 700; }
+.actions { display: flex; justify-content: space-between; max-width: 425px; margin-top: 12px; margin-left: -8px; }
+.act { display: inline-flex; align-items: center; color: var(--muted); font-size: 13px; line-height: 16px; }
+.act .ring { width: 34px; height: 34px; border-radius: 9999px; display: grid; place-items: center; transition: background-color .2s, color .2s; }
+.act svg { width: 18.75px; height: 18.75px; }
+.act .n { padding: 0 12px 0 1px; min-width: 1ch; }
+.act.reply:hover { color: var(--blue); } .act.reply:hover .ring { background: rgba(29, 155, 240, .1); }
+.act.ok:hover, .act.ok.on { color: var(--green); } .act.ok:hover .ring { background: rgba(0, 186, 124, .1); }
+.act.no:hover, .act.no.on { color: var(--pink); } .act.no:hover .ring { background: rgba(249, 24, 128, .1); }
+.act.view:hover { color: var(--blue); } .act.view:hover .ring { background: rgba(29, 155, 240, .1); }
+.act-right { display: flex; }
 
-.quote {
-  margin-top: 10px; padding: 10px 14px;
-  border: 1px solid var(--line); border-radius: 12px;
-  font-size: .93rem; color: var(--ink-soft);
-}
-.quote .qwho { color: var(--ink); font-weight: 700; }
+.empty { padding: 32px; max-width: 400px; margin: 0 auto; }
+.empty h3 { font-size: 31px; line-height: 36px; font-weight: 800; margin: 0 0 8px; }
+.empty p { color: var(--muted); margin: 0; }
 
-/* tool-call card: what the dog actually did */
-.action {
-  margin-top: 10px;
-  border: 1px solid color-mix(in srgb, var(--c) 40%, var(--line));
-  border-radius: 12px; overflow: hidden;
+/* ─── profile ───────────────────────────────────────────────── */
+.banner { aspect-ratio: 3 / 1; background: color-mix(in srgb, var(--c) 45%, #000); }
+.profile-top { padding: 12px 16px 0; }
+.profile-row { display: flex; justify-content: space-between; align-items: flex-start; height: 72px; }
+.profile-row .av { margin-top: -79px; }
+.profile-name { font-size: 20px; line-height: 24px; font-weight: 800; margin-top: 4px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.role-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 28px; padding: 0 12px; border: 1px solid #536471; border-radius: 9999px;
+  font-size: 15px; font-weight: 700;
 }
-.action .call {
-  display: flex; justify-content: space-between; gap: 12px;
-  padding: 8px 14px;
-  background: color-mix(in srgb, var(--c) 10%, var(--panel));
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .9rem;
-}
-.action .result { padding: 8px 14px; font-size: .93rem; }
-.action .result.bad { color: var(--safety); font-weight: 700; }
-.frame {
-  aspect-ratio: 16 / 9; margin: 0 14px 12px; border-radius: 8px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--ink) 8%, var(--floor)) 0 48%, color-mix(in srgb, var(--ink) 16%, var(--floor)) 48% 100%);
-  display: grid; place-items: end start; padding: 10px;
-  color: var(--ink-soft); font-size: .85rem; position: relative;
-}
-.frame::after {
-  content: "camera frame"; position: absolute; top: 8px; right: 10px;
-  font-size: .75rem; opacity: .8;
-}
+.role-pill svg.i.verified { margin: 0; vertical-align: 0; }
+.profile-bio { margin: 12px 0; }
+.profile-meta { display: flex; flex-wrap: wrap; gap: 0 12px; color: var(--muted); margin-bottom: 12px; }
+.profile-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.profile-meta svg { width: 18.75px; height: 18.75px; }
+.profile-stats { display: flex; gap: 20px; color: var(--muted); padding-bottom: 12px; }
+.profile-stats b { color: var(--text); }
 
-.votes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.vote {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: .85rem; padding: 3px 10px 3px 4px; border-radius: 999px;
-  border: 1px solid var(--line);
+/* ─── notifications ─────────────────────────────────────────── */
+.note { display: flex; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.note:hover { background: var(--row-hover); }
+.note .kind-ico { width: 40px; display: flex; justify-content: flex-end; flex: none; }
+.note .kind-ico svg { width: 30px; height: 30px; }
+.note .kind-ico.ok { color: var(--green); }
+.note .kind-ico.no { color: var(--pink); }
+.note .kind-ico.chk { color: var(--blue); }
+.note-body { flex: 1; min-width: 0; }
+.note-body .line { margin: 12px 0 0; }
+.note-body .quoted { color: var(--muted); margin-top: 12px; }
+
+/* ─── list rows ─────────────────────────────────────────────── */
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; transition: background-color .2s; }
+.row:hover { background: var(--row-hover); }
+.row .who { flex: 1; min-width: 0; }
+.row .who div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .bio { white-space: normal !important; margin-top: 4px; }
+.section-title { font-size: 20px; line-height: 24px; font-weight: 800; padding: 12px 16px; margin: 0; }
+.radio { width: 20px; height: 20px; border: 2px solid #536471; border-radius: 9999px; flex: none; }
+.radio.on { border: 6px solid var(--blue); }
+
+pre.log { margin: 0; padding: 12px 16px; font: 13px/18px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ─── right sidebar ─────────────────────────────────────────── */
+.side-inner { padding-bottom: 64px; }
+.search-wrap { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 4px 0 12px; }
+.search {
+  display: flex; align-items: center; height: 44px;
+  border: 1px solid var(--border); border-radius: 9999px; padding: 0 12px;
 }
-.vote .dot { width: 18px; height: 18px; border-radius: 6px; background: var(--c); color: var(--panel); display: grid; place-items: center; font-size: .7rem; font-weight: 800; }
-.vote.no { border-color: var(--safety); color: var(--safety); font-weight: 700; }
+.search:focus-within { border-color: var(--blue); }
+.search svg { width: 18.75px; height: 18.75px; color: var(--muted); }
+.search:focus-within svg { color: var(--blue); }
+.search input { flex: 1; border: 0; outline: none; background: none; padding: 0 8px; font-size: 15px; min-width: 0; }
+.search input::placeholder { color: var(--muted); }
+.side-card { border: 1px solid var(--border); border-radius: 16px; margin-bottom: 16px; overflow: hidden; }
+.side-card h2 { font-size: 20px; line-height: 24px; font-weight: 800; margin: 0; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+.side-card h2 .icon-btn { margin: -6px -6px -6px 0; }
+.side-card .pad { padding: 0 16px 12px; }
+.side-card .pad p { margin: 0 0 12px; }
+.side-item { padding: 12px 16px; cursor: pointer; transition: background-color .2s; }
+.side-item:hover { background: var(--row-hover); }
+.news-title { font-weight: 700; }
+.news-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 16px; }
+.stack { display: flex; }
+.stack .av + .av { margin-left: -6px; }
+.trend { display: flex; justify-content: space-between; }
+.trend .meta { color: var(--muted); font-size: 13px; line-height: 16px; }
+.trend .val { font-weight: 700; margin-top: 2px; }
+.trend .icon-btn { color: var(--muted); margin: -8px -8px 0 0; width: 30px; height: 30px; }
+.show-more { display: block; padding: 16px; color: var(--blue); }
+.show-more:hover { background: var(--row-hover); text-decoration: none; }
+.side-foot { padding: 0 16px; color: var(--muted); font-size: 13px; line-height: 16px; }
+.side-foot span { margin-right: 12px; display: inline-block; }
 
-/* ── right rail: the dog ───────────────────────────────────── */
-.map-wrap { position: relative; }
-#map { width: 100%; height: auto; display: block; border-radius: 12px; background: var(--floor); }
-#map .gridline { stroke: var(--grid); stroke-width: .02; }
-#map .wall { fill: none; stroke: var(--ink); stroke-width: .06; }
-#map .obstacle { fill: color-mix(in srgb, var(--ink) 18%, var(--floor)); stroke: var(--ink-soft); stroke-width: .02; }
-#map .person { fill: color-mix(in srgb, var(--safety) 25%, var(--floor)); stroke: var(--safety); stroke-width: .025; stroke-dasharray: .06 .05; }
-#map .goal { fill: none; stroke: var(--scribe); stroke-width: .04; stroke-dasharray: .1 .07; }
-#map .trail { fill: none; stroke: var(--ink); stroke-width: .045; stroke-linecap: round; stroke-linejoin: round; }
-#map .pin { stroke: var(--panel); stroke-width: .03; }
-#map .pin.hl { stroke: var(--ink); stroke-width: .05; }
-#map .maplabel { font: 700 .17px "Atkinson Hyperlegible", sans-serif; fill: var(--ink-soft); }
-#dog { transition: transform .6s ease-in-out; }
-#dog .body { fill: var(--ink); }
-#dog .nose { fill: var(--panel); }
+.map-box { padding: 0 16px 4px; cursor: pointer; }
+.map { width: 100%; height: auto; display: block; border-radius: 12px; background: #16181c; }
+.map .grid { stroke: #202327; stroke-width: .02; }
+.map .wall { fill: none; stroke: #536471; stroke-width: .05; }
+.map .obstacle { fill: #2f3336; stroke: #536471; stroke-width: .02; }
+.map .person { fill: rgba(249, 24, 128, .15); stroke: var(--pink); stroke-width: .025; stroke-dasharray: .06 .05; }
+.map .goal { fill: rgba(0, 186, 124, .08); stroke: var(--green); stroke-width: .035; stroke-dasharray: .1 .07; }
+.map .trail { fill: none; stroke: var(--blue); stroke-width: .045; stroke-linecap: round; stroke-linejoin: round; }
+.map text { font: 700 .16px var(--font); fill: var(--muted); }
+.map .dog-body { fill: var(--text); }
+.map .dog-nose { fill: #000; }
 
-.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: .85rem; color: var(--ink-soft); }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend i { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
-
-.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 16px; margin: 0; }
-.stats div { display: grid; }
-.stats dt { color: var(--ink-soft); font-size: .85rem; }
-.stats dd { margin: 0; font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 1.5rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
-
-.tally { display: grid; gap: 8px; }
-.tally .row { display: grid; grid-template-columns: 70px 1fr 28px; gap: 10px; align-items: center; font-size: .9rem; }
-.tally .bar { height: 8px; border-radius: 99px; background: var(--grid); overflow: hidden; }
-.tally .bar i { display: block; height: 100%; background: var(--c); width: 0; transition: width .4s; }
-.tally .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
-
-.theme-toggle { justify-self: start; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: .85rem; }
-
-/* ── responsive ────────────────────────────────────────────── */
-@media (max-width: 1180px) {
-  .app { grid-template-columns: minmax(0, 1fr) 340px; }
-  .rail.left { grid-column: 1 / -1; position: static; grid-template-columns: 1fr 1fr; }
+/* ─── floating buttons ──────────────────────────────────────── */
+.fabs { position: fixed; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 14px; z-index: 5; }
+.fab {
+  width: 53px; height: 53px; border-radius: 16px;
+  background: var(--bg); border: 1px solid var(--border);
+  box-shadow: 0 0 15px rgba(255, 255, 255, .2), 0 0 3px 1px rgba(255, 255, 255, .15);
+  display: grid; place-items: center;
 }
-@media (max-width: 820px) {
-  .app { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; gap: 14px; }
-  .rail, .rail.left { position: static; grid-template-columns: minmax(0, 1fr); }
-  .feed-head { flex-wrap: wrap; }
-  .post { grid-template-columns: 40px 1fr; padding: 14px 16px; }
-  .avatar.lg { width: 40px; height: 40px; font-size: 1.15rem; }
+.fab:hover { background: #16181c; }
+.fab svg { width: 26px; height: 26px; }
+.fab .lbl { font-weight: 800; font-size: 15px; }
+
+/* ─── responsive (mirrors X's breakpoints) ──────────────────── */
+@media (max-width: 1280px) {
+  .nav-col { width: 88px; }
+  .nav-inner { align-items: center; }
+  .nav-item .label, .account .who, .account .acc-dots { display: none; }
+  .nav-item > span { gap: 0; }
+  .btn-post-big { width: 52px; height: 52px; }
+  .btn-post-big .txt { display: none; }
+  .btn-post-big svg { display: inline; }
+  .account { width: auto; }
 }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+@media (max-width: 1000px) { .side-col { display: none; } }
+@media (max-width: 700px) {
+  .nav-col { width: 68px; }
+  .nav-inner { padding: 0 4px; }
+  .main-col { width: auto; flex: 1; min-width: 0; border-right: 0; }
+  .fabs { right: 12px; bottom: 12px; }
+  .compose-tools .icons .icon-btn:nth-child(n+4) { display: none; }
 }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<div class="app">
-
-  <!-- left rail: the mission and who's on the council -->
-  <aside class="rail left">
-    <section class="panel" aria-labelledby="mission-h">
-      <h2 id="mission-h">Mission</h2>
-      <p class="mission-goal" id="goal">Cross the lab to the far wall, then sit.</p>
-      <ol class="steps" id="steps"></ol>
-    </section>
-    <section class="panel" aria-labelledby="agents-h">
-      <h2 id="agents-h">The council</h2>
-      <ul class="agents" id="agents"></ul>
-    </section>
-  </aside>
-
-  <!-- center: the feed -->
-  <main class="feed-wrap" aria-labelledby="feed-h">
-    <header class="feed-head">
-      <div>
-        <h1 id="feed-h">Council feed</h1>
-        <span class="live" id="live">Live</span>
-      </div>
-      <div class="controls" role="group" aria-label="Playback">
-        <button id="btn-play" aria-pressed="true">Pause</button>
-        <button id="btn-speed" title="Playback speed">1×</button>
-        <button id="btn-restart">Restart</button>
-      </div>
-    </header>
-    <ol class="feed" id="feed" aria-live="polite"></ol>
-    <p class="empty" id="empty">Waiting for the council to start the mission.</p>
-  </main>
-
-  <!-- right rail: where the dog is and what it's done -->
-  <aside class="rail right">
-    <section class="panel" aria-labelledby="map-h">
-      <h2 id="map-h">Where the dog is</h2>
-      <div class="map-wrap">
-        <svg id="map" viewBox="-0.3 -0.3 6.6 4.6" role="img" aria-label="Top-down map of the lab with the dog's path"></svg>
-      </div>
-      <div class="legend">
-        <span><i style="background:var(--ink)"></i>Path walked</span>
-        <span><i style="border:2px dashed var(--scribe)"></i>Goal</span>
-        <span><i style="border:2px dashed var(--safety)"></i>Person</span>
-      </div>
-    </section>
-    <section class="panel" aria-labelledby="pose-h">
-      <h2 id="pose-h">Dog status</h2>
-      <dl class="stats">
-        <div><dt>Distance to goal</dt><dd id="s-goal">–</dd></div>
-        <div><dt>Heading</dt><dd id="s-heading">–</dd></div>
-        <div><dt>Walked so far</dt><dd id="s-walked">–</dd></div>
-        <div><dt>Actions taken</dt><dd id="s-actions">0</dd></div>
-      </dl>
-    </section>
-    <section class="panel" aria-labelledby="tally-h">
-      <h2 id="tally-h">Who's talking</h2>
-      <div class="tally" id="tally"></div>
-    </section>
-    <button class="theme-toggle" id="theme">Switch theme</button>
-  </aside>
+<div class="layout">
+  <header class="nav-col"><div class="nav-inner" id="nav"></div></header>
+  <main class="main-col" id="view"></main>
+  <aside class="side-col"><div class="side-inner" id="side"></div></aside>
+</div>
+<div class="fabs">
+  <button class="fab" id="fab-play" aria-label="Pause playback"></button>
+  <button class="fab" id="fab-speed" aria-label="Change playback speed"><span class="lbl">1×</span></button>
 </div>
 
 <script>
-/* ───────────────────────────────────────────────────────────────
-   Agents. One entry per council member. `color` keys into CSS vars.
-   ─────────────────────────────────────────────────────────────── */
-const AGENTS = {
-  planner: { name: "Planner", handle: "@planner", initial: "P", role: "Breaks the goal into steps and picks the route" },
-  scout:   { name: "Scout",   handle: "@scout",   initial: "S", role: "Reads the camera and reports what's ahead" },
-  safety:  { name: "Safety",  handle: "@safety",  initial: "!", role: "Checks every move for people and obstacles. Can veto." },
-  pilot:   { name: "Pilot",   handle: "@pilot",   initial: "D", role: "The only one who moves the dog" },
-  scribe:  { name: "Scribe",  handle: "@scribe",  initial: "R", role: "Checks progress and keeps the record" },
-  system:  { name: "Mission control", handle: "@robodog", initial: "◆", role: "" },
+/* ─── icons (drawn for this page, 24×24) ─────────────────────── */
+const P = {
+  paw: '<ellipse cx="6" cy="9.5" rx="2.2" ry="2.8"/><ellipse cx="10" cy="5" rx="2.2" ry="2.8"/><ellipse cx="15" cy="5" rx="2.2" ry="2.8"/><ellipse cx="19" cy="9.5" rx="2.2" ry="2.8"/><path d="M12.5 11c-3 0-6.5 4.3-6.5 7.2 0 2 1.6 2.8 3.4 2.8 1.4 0 2-.6 3.1-.6s1.7.6 3.1.6c1.8 0 3.4-.8 3.4-2.8 0-2.9-3.5-7.2-6.5-7.2z"/>',
+  home: '<path d="M3 10.5 12 3l9 7.5V21h-6v-6.5H9V21H3z"/>',
+  search: '<circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/>',
+  bell: '<path d="M6 10a6 6 0 0 1 12 0c0 4.5 1.5 6.5 2.5 7.5h-17C4.5 16.5 6 14.5 6 10z"/><path d="M9.5 20.5a2.5 2.5 0 0 0 5 0"/>',
+  agents: '<circle cx="9.5" cy="8" r="4"/><path d="M2.5 21c0-4 3.1-6.5 7-6.5s7 2.5 7 6.5"/><path d="M19.5 7v6M16.5 10h6"/>',
+  pin: '<path d="M12 21.5s7-6.6 7-12a7 7 0 0 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  log: '<path d="M6 3h12v18l-6-4.5L6 21z"/>',
+  more: '<circle cx="12" cy="12" r="9.5"/><circle cx="7.8" cy="12" r=".6" fill="currentColor"/><circle cx="12" cy="12" r=".6" fill="currentColor"/><circle cx="16.2" cy="12" r=".6" fill="currentColor"/>',
+  feather: '<path d="M20 4c-7 0-12 4-13.5 11L5 20M8.5 15H14c3 0 5.5-4 6-11"/>',
+  image: '<rect x="3" y="3.5" width="18" height="17" rx="3"/><circle cx="9" cy="9.5" r="1.8"/><path d="m21 15.5-4.5-4.5L6 20.5"/>',
+  gif: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 10H8.5v4H10v-1.5M13 10v4M16 14v-4h2M16 12h1.5"/>',
+  poll: '<circle cx="6" cy="7" r="2.2"/><circle cx="6" cy="17" r="2.2"/><path d="M11 7h9M11 17h9M13 11h5"/>',
+  emoji: '<circle cx="12" cy="12" r="9.5"/><path d="M8 14.5c1 1.5 2.3 2.2 4 2.2s3-.7 4-2.2"/><circle cx="9" cy="9.5" r=".9" fill="currentColor"/><circle cx="15" cy="9.5" r=".9" fill="currentColor"/>',
+  sched: '<path d="M10 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3M3 9h16M8 2.5v3M14 2.5v3"/><circle cx="16.5" cy="16.5" r="5"/><path d="M16.5 14v2.7l1.6 1"/>',
+  flag: '<path d="M5 21.5V3.5h13l-2.5 4.5 2.5 4.5H5"/>',
+  reply: '<path d="M4.5 18.5 3 21.5l4-1.3a9.3 8.3 0 1 0-2.5-1.7z"/>',
+  ok: '<circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.8 2.8L16.2 9"/>',
+  no: '<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>',
+  views: '<path d="M4 20V13M9.3 20V4M14.6 20V9M20 20v-4"/>',
+  share: '<path d="M12 3v12.5M7 8l5-5 5 5M4 14.5V20h16v-5.5"/>',
+  dots: '<circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/>',
+  back: '<path d="M20 12H4M10.5 5.5 4 12l6.5 6.5"/>',
+  restart: '<path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v4.5h4.5"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  cpu: '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9.5 2.5V6M14.5 2.5V6M9.5 18v3.5M14.5 18v3.5M2.5 9.5H6M2.5 14.5H6M18 9.5h3.5M18 14.5h3.5"/>',
+  tool: '<path d="M14 7a4 4 0 0 1 5.5-3.7L17 5.8 18.2 7l2.5-2.5A4 4 0 0 1 15.8 10L7 18.8a1.7 1.7 0 0 1-2.4-2.4L13.4 7.6z"/>',
+  play: '<path d="M7 4.5v15l12.5-7.5z"/>',
+  pause: '<rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/>',
+  check: '<path d="M22.3 12 20 9.4l.3-3.5-3.4-.8L15.1 2 12 3.4 8.8 2 7 5.1l-3.4.7.3 3.5L1.7 12l2.3 2.6-.3 3.5 3.4.8 1.8 3.1 3.1-1.4 3.2 1.4 1.8-3.1 3.4-.8-.3-3.5zm-12 4.4-3.8-3.7 1.4-1.5 2.3 2.3 5.6-6 1.5 1.4z"/>',
 };
+const FILLED = new Set(["paw", "play", "pause", "check", "dots"]);
+const icon = (n, cls = "") => `<svg class="i ${FILLED.has(n) ? "fill" : ""} ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
+const solid = (n, cls = "") => `<svg class="i fill ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
+
+/* ─── data ──────────────────────────────────────────────────── */
+const AGENTS = {
+  planner: { name: "Planner", handle: "planner", initial: "P", role: "Plans the route", bio: "Breaks the mission into steps and proposes each move. Every proposal needs Safety's approval." },
+  scout:   { name: "Scout",   handle: "scout",   initial: "S", role: "Reads the camera", bio: "Looks at every camera frame the dog takes and reports what's ahead: open floor, obstacles, people." },
+  safety:  { name: "Safety",  handle: "safety",  initial: "!", role: "Can veto", bio: "Checks every proposal for people and obstacles, and can veto any move." },
+  pilot:   { name: "Pilot",   handle: "pilot",   initial: "D", role: "Moves the dog", bio: "The only agent allowed to move the dog. Runs look, move, turn, pose, trick and finish." },
+  scribe:  { name: "Scribe",  handle: "scribe",  initial: "R", role: "Keeps the record", bio: "Checks progress against the mission after each move and keeps the full record." },
+  system:  { name: "Go2 Air", handle: "robodog", initial: "", role: "The dog", bio: "Unitree Go2 Air in the IF Lab. Five agents decide every move it makes, and this is where they talk it through." },
+};
+const COUNCIL = ["planner", "scout", "safety", "pilot", "scribe"];
+const DEFAULT_GOAL = "Cross the lab to the far wall, then sit.";
 
 const MISSION = {
-  goal: "Cross the lab to the far wall, then sit.",
+  goal: DEFAULT_GOAL,
   steps: ["Look around the room", "Reach the chair", "Get past the chair", "Reach the far wall", "Sit"],
   room: { w: 6, h: 4 },
   goalZone: { x: 5.1, y: 1.6, w: 0.8, h: 1.2 },
@@ -357,14 +437,9 @@ const MISSION = {
   people: [{ x: 1.8, y: 0.55, r: 0.28, label: "person" }],
 };
 
-/* ───────────────────────────────────────────────────────────────
-   Sample mission. Each event mirrors one line of a future JSONL log:
-     { id, t, agent, kind, text, reply_to?, action?, votes?, pose?, step_done?, step_active? }
-   kind: mission | proposal | check | objection | approval | action | finding | summary
-   action: { tool, args, result, ok?, frame? }   pose: { x, y, h }  (metres, degrees)
-   ─────────────────────────────────────────────────────────────── */
+/* One event = one post. Same shape a future runs/<ts>-council.jsonl line will have. */
 const SAMPLE_EVENTS = [
-  { id: 1, agent: "system", kind: "mission", text: "New mission: <b>cross the lab to the far wall, then sit.</b>\nObstacle avoidance on. 150 steps max.", pose: { x: 0.5, y: 2, h: 0 }, step_active: 0 },
+  { id: 1, agent: "system", kind: "mission", text: "", pose: { x: 0.5, y: 2, h: 0 }, step_active: 0 },
   { id: 2, agent: "planner", kind: "proposal", text: "Plan: look first, then walk forward in short bursts and check position after each one. The far wall should be about 5 m straight ahead.", votes: [["safety", "yes"], ["scout", "yes"]] },
   { id: 3, agent: "safety", kind: "approval", reply_to: 2, text: "Approved. Keep each burst to 2 s or less until Scout has seen the whole floor. Someone is standing near the door on the left." },
   { id: 4, agent: "pilot", kind: "action", text: "Taking a look before we move.", action: { tool: "look", args: {}, result: "Frame captured, heading 0°", frame: "Open floor ahead. A chair about 1.5 m out, slightly right of centre." } },
@@ -375,7 +450,7 @@ const SAMPLE_EVENTS = [
   { id: 9, agent: "pilot", kind: "action", text: "One more.", action: { tool: "move", args: { direction: "forward", seconds: 2 }, result: "Moved 0.04 m. Blocked.", ok: false }, pose: { x: 1.67, y: 2, h: 0 } },
   { id: 10, agent: "scribe", kind: "check", reply_to: 9, text: "Only 0.04 m on that last move. The dog's obstacle avoidance is holding it back, so we're at the chair.", step_done: 1, step_active: 2 },
   { id: 11, agent: "planner", kind: "proposal", text: "Sidestep <b>left</b> for 2 s to clear the chair, then carry on forward.", votes: [["safety", "no"], ["scout", "yes"]] },
-  { id: 12, agent: "safety", kind: "objection", reply_to: 11, text: "No. Left puts us within about 1 m of the person by the door. Go right instead." },
+  { id: 12, agent: "safety", kind: "objection", reply_to: 11, text: "Vetoed. Left puts us within about 1 m of the person by the door. Go right instead." },
   { id: 13, agent: "pilot", kind: "action", text: "Checking the right side before we commit.", action: { tool: "look", args: { turn_first: 45 }, result: "Turned 44° first. Heading 44°.", frame: "Clear floor to the right of the chair, about 2 m deep." }, pose: { x: 1.67, y: 2, h: 44 } },
   { id: 14, agent: "scout", kind: "finding", reply_to: 13, text: "Right side is clear. Nothing within 2 m." },
   { id: 15, agent: "planner", kind: "proposal", reply_to: 12, text: "Revised plan: face forward again, sidestep <b>right</b> 2 s, then continue forward.", votes: [["safety", "yes"], ["scout", "yes"]] },
@@ -390,195 +465,382 @@ const SAMPLE_EVENTS = [
   { id: 24, agent: "pilot", kind: "action", text: "Forward.", action: { tool: "move", args: { direction: "forward", seconds: 3 }, result: "Moved 0.87 m. 3.75 m from start." }, pose: { x: 4.29, y: 2.4, h: 1 } },
   { id: 25, agent: "pilot", kind: "action", text: "Last stretch.", action: { tool: "move", args: { direction: "forward", seconds: 3 }, result: "Moved 0.84 m. 4.55 m from start." }, pose: { x: 5.13, y: 2.25, h: 1 } },
   { id: 26, agent: "safety", kind: "check", reply_to: 25, text: "Wall is about 0.4 m ahead. <b>No more forward moves.</b>", step_done: 3, step_active: 4 },
-  { id: 27, agent: "planner", kind: "proposal", reply_to: 26, text: "We're at the far wall. Last step of the goal: sit.", votes: [["safety", "yes"], ["scribe", "yes"]] },
+  { id: 27, agent: "planner", kind: "proposal", reply_to: 26, text: "We're at the far wall. Last step of the mission: sit.", votes: [["safety", "yes"], ["scribe", "yes"]] },
   { id: 28, agent: "pilot", kind: "action", text: "Sitting.", action: { tool: "trick", args: { name: "sit" }, result: "Sitting." } },
   { id: 29, agent: "scribe", kind: "summary", text: "<b>Mission complete.</b> 5.2 m walked, 14 actions, blocked once by the chair. One plan was vetoed (left sidestep, person nearby) and replaced. Full record saved.", step_done: 4 },
 ];
 
-/* ─── rendering ─────────────────────────────────────────────── */
-const $ = (s) => document.querySelector(s);
-const SVGNS = "http://www.w3.org/2000/svg";
-const svg = (tag, attrs = {}, parent) => {
-  const el = document.createElementNS(SVGNS, tag);
-  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
-  if (parent) parent.appendChild(el);
-  return el;
+/* ─── state ─────────────────────────────────────────────────── */
+const S = {
+  shown: [], byId: {},
+  i: 0, playing: true, speed: 1, timer: null,
+  path: [], walked: 0, actions: 0,
+  stepStatus: [], step: 0,
+  unread: 0, newestId: null,
+  view: { name: "home", tab: "live" },
+  query: "", hideSteps: false,
 };
-const KIND_LABEL = { mission: "Mission", proposal: "Proposal", check: "Check", objection: "Veto", approval: "Approved", action: "Action", finding: "Sees", summary: "Summary" };
+const DELAY = 2200;
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const strip = (h) => h.replace(/<[^>]+>/g, "");
 
-function avatar(agentKey, big) {
-  const a = AGENTS[agentKey];
-  return `<div class="avatar${big ? " lg" : ""}" data-agent="${agentKey}" aria-hidden="true">${a.initial}</div>`;
+/* ─── components ────────────────────────────────────────────── */
+function Avatar(key, size = "") {
+  const inner = key === "system" ? solid("paw") : AGENTS[key].initial;
+  return `<div class="av ${size}" data-agent="${key}" aria-hidden="true">${inner}</div>`;
+}
+const Verified = () => icon("check", "verified");
+
+function ago(at) {
+  const s = Math.max(0, Math.round((Date.now() - at) / 1000));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  return `${Math.floor(s / 3600)}h`;
 }
 
-function renderStatic() {
-  $("#goal").textContent = MISSION.goal;
-  $("#steps").innerHTML = MISSION.steps.map((s) => `<li>${s}</li>`).join("");
-  $("#agents").innerHTML = Object.entries(AGENTS)
-    .filter(([k]) => k !== "system")
-    .map(([k, a]) => `<li data-agent="${k}">${avatar(k)}<div><div class="who">${a.name}</div><div class="what">${a.role}</div></div></li>`)
-    .join("");
-  $("#tally").innerHTML = Object.entries(AGENTS)
-    .filter(([k]) => k !== "system")
-    .map(([k, a]) => `<div class="row" data-agent="${k}"><span>${a.name}</span><span class="bar"><i></i></span><span class="n">0</span></div>`)
-    .join("");
-  drawRoom();
+function counts(ev) {
+  return {
+    replies: S.shown.filter((e) => e.reply_to === ev.id).length,
+    yes: (ev.votes || []).filter((v) => v[1] === "yes").length,
+    no: (ev.votes || []).filter((v) => v[1] === "no").length,
+  };
 }
 
-let trailEl, pinsEl, dogEl;
-function drawRoom() {
-  const m = $("#map");
-  m.innerHTML = "";
-  const { w, h } = MISSION.room;
-  for (let x = 1; x < w; x++) svg("line", { class: "gridline", x1: x, y1: 0, x2: x, y2: h }, m);
-  for (let y = 1; y < h; y++) svg("line", { class: "gridline", x1: 0, y1: y, x2: w, y2: y }, m);
-  const g = MISSION.goalZone;
-  svg("rect", { class: "goal", x: g.x, y: g.y, width: g.w, height: g.h, rx: 0.08 }, m);
-  for (const o of MISSION.obstacles) {
-    svg("rect", { class: "obstacle", x: o.x, y: o.y, width: o.w, height: o.h, rx: 0.05 }, m);
-    svg("text", { class: "maplabel", x: o.x, y: o.y - 0.08 }, m).textContent = o.label;
+const KIND = { mission: "", proposal: "Proposal", check: "Check", objection: "Veto", approval: "Approved", action: "Action", finding: "Report", summary: "Summary" };
+
+function Post(ev) {
+  const a = AGENTS[ev.agent];
+  const parent = ev.reply_to && S.byId[ev.reply_to];
+  const c = counts(ev);
+  let h = `<article class="post${ev.id === S.newestId ? " is-new" : ""}" data-id="${ev.id}">
+    <a data-profile="${ev.agent}" aria-label="${a.name}">${Avatar(ev.agent)}</a>
+    <div class="post-body">
+      <div class="post-head">
+        <div class="meta"><a class="name" data-profile="${ev.agent}">${a.name}</a>${Verified()}
+          <span class="muted"> @${a.handle} · <time data-at="${ev._at}">${ago(ev._at)}</time></span>${KIND[ev.kind] ? `<span class="kind-tag${ev.kind === "objection" ? " veto" : ""}"> · ${KIND[ev.kind]}</span>` : ""}</div>
+        <button class="icon-btn dots" aria-label="More">${icon("dots")}</button>
+      </div>`;
+  if (parent) h += `<div class="replying">Replying to <a data-profile="${parent.agent}">@${AGENTS[parent.agent].handle}</a></div>`;
+  h += `<div class="post-text">${ev.text}</div>`;
+  if (ev.action) {
+    const args = Object.entries(ev.action.args).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ");
+    h += `<div class="card">
+      ${ev.action.frame ? `<div class="frame"><span>${esc(ev.action.frame)}</span></div>` : ""}
+      <div class="code">${esc(ev.action.tool)}(${esc(args)})</div>
+      <div class="result${ev.action.ok === false ? " bad" : ""}">${esc(ev.action.result)}</div></div>`;
+  } else if (parent && (ev.kind === "objection" || ev.kind === "approval")) {
+    const pa = AGENTS[parent.agent];
+    h += `<div class="card quote"><div class="qhead">${Avatar(parent.agent, "s20")}<b>${pa.name}</b>${Verified()}<span class="muted">@${pa.handle}</span></div>${parent.text}</div>`;
   }
-  for (const p of MISSION.people) {
-    svg("circle", { class: "person", cx: p.x, cy: p.y, r: p.r }, m);
-    svg("text", { class: "maplabel", x: p.x + p.r + 0.06, y: p.y + 0.06 }, m).textContent = p.label;
-  }
-  svg("text", { class: "maplabel", x: g.x, y: g.y - 0.08 }, m).textContent = "goal";
-  svg("rect", { class: "wall", x: 0, y: 0, width: w, height: h }, m);
-  trailEl = svg("polyline", { class: "trail", points: "" }, m);
-  pinsEl = svg("g", {}, m);
-  dogEl = svg("g", { id: "dog" }, m);
-  svg("rect", { class: "body", x: -0.2, y: -0.12, width: 0.4, height: 0.24, rx: 0.08 }, dogEl);
-  svg("circle", { class: "nose", cx: 0.12, cy: 0, r: 0.045 }, dogEl);
-  dogEl.style.opacity = 0;
+  h += `<div class="actions">
+      <span class="act reply" title="Replies"><span class="ring">${icon("reply")}</span><span class="n">${c.replies || ""}</span></span>
+      <span class="act ok${c.yes ? " on" : ""}" title="Approvals"><span class="ring">${icon("ok")}</span><span class="n">${c.yes || ""}</span></span>
+      <span class="act no${c.no ? " on" : ""}" title="Vetoes"><span class="ring">${icon("no")}</span><span class="n">${c.no || ""}</span></span>
+      <span class="act view" title="Step number"><span class="ring">${icon("views")}</span><span class="n">${ev.id}</span></span>
+      <span class="act-right"><span class="act view" title="Save"><span class="ring">${icon("log")}</span></span><span class="act view" title="Share"><span class="ring">${icon("share")}</span></span></span>
+    </div></div></article>`;
+  return h;
 }
 
-/* ─── playback state ────────────────────────────────────────── */
-const state = { i: 0, playing: true, speed: 1, timer: null, path: [], walked: 0, actions: 0, tally: {} };
-const BASE_DELAY = 2200;
+function PostList(events, emptyTitle, emptyText) {
+  if (!events.length) return `<div class="empty"><h3>${emptyTitle}</h3><p>${emptyText}</p></div>`;
+  return [...events].reverse().map(Post).join("");
+}
 
-function reset() {
-  clearTimeout(state.timer);
-  Object.assign(state, { i: 0, path: [], walked: 0, actions: 0, tally: {} });
-  $("#feed").innerHTML = "";
-  $("#empty").hidden = false;
-  renderStatic();
-  updateStats(null);
-  schedule(400);
+function Tabs(items, active, bordered, plus) {
+  return `<div class="tabs${bordered ? " bordered" : ""}">${items.map(([k, label]) =>
+    `<button class="tab${k === active ? " active" : ""}" data-tab="${k}"><span>${label}</span></button>`).join("")}${plus ? `<button class="tab-plus" data-go="home" data-focus="compose" aria-label="New mission">${icon("plus")}</button>` : ""}</div>`;
+}
+
+function TitleBar(title, sub, withBack) {
+  return `<div class="title-bar">${withBack ? `<button class="icon-btn back" data-go="home" aria-label="Back">${icon("back")}</button>` : ""}
+    <div style="flex:1;min-width:0"><h2>${title}</h2>${sub ? `<div class="sub">${sub}</div>` : ""}</div></div>`;
+}
+
+function MapSvg() {
+  const { w, h } = MISSION.room, g = MISSION.goalZone;
+  let s = `<svg class="map" viewBox="-0.2 -0.2 6.4 4.4" role="img" aria-label="Top-down map of the lab and the dog's path">`;
+  for (let x = 1; x < w; x++) s += `<line class="grid" x1="${x}" y1="0" x2="${x}" y2="${h}"/>`;
+  for (let y = 1; y < h; y++) s += `<line class="grid" x1="0" y1="${y}" x2="${w}" y2="${y}"/>`;
+  s += `<rect class="goal" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx=".08"/><text x="${g.x}" y="${g.y - .08}">goal</text>`;
+  for (const o of MISSION.obstacles) s += `<rect class="obstacle" x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" rx=".05"/><text x="${o.x}" y="${o.y - .08}">${o.label}</text>`;
+  for (const p of MISSION.people) s += `<circle class="person" cx="${p.x}" cy="${p.y}" r="${p.r}"/><text x="${p.x + p.r + .06}" y="${p.y + .06}">${p.label}</text>`;
+  s += `<rect class="wall" x="0" y="0" width="${w}" height="${h}" rx=".05"/>`;
+  if (S.path.length) {
+    s += `<polyline class="trail" points="${S.path.map((q) => `${q.x},${q.y}`).join(" ")}"/>`;
+    const last = S.path.at(-1);
+    s += `<g transform="translate(${last.x} ${last.y}) rotate(${last.h})"><rect class="dog-body" x="-.2" y="-.12" width=".4" height=".24" rx=".08"/><circle class="dog-nose" cx=".12" cy="0" r=".045"/></g>`;
+  }
+  return s + "</svg>";
+}
+
+function status() {
+  const p = S.path.at(-1);
+  return {
+    goal: p ? `${Math.max(0, MISSION.goalZone.x - p.x).toFixed(1)} m` : "–",
+    heading: p ? `${Math.round(p.h)}°` : "–",
+    walked: `${S.walked.toFixed(1)} m`,
+    actions: String(S.actions),
+  };
+}
+
+/* ─── left nav ──────────────────────────────────────────────── */
+const NAV = [
+  ["home", "Home", "home"], ["explore", "Explore", "search"], ["notifications", "Notifications", "bell"],
+  ["agents", "Agents", "agents"], ["map", "Map", "pin"], ["log", "Log", "log"], ["more", "More", "more"],
+];
+function renderNav() {
+  const cur = S.view.name;
+  $("#nav").innerHTML = `
+    <a class="logo" data-go="home" aria-label="Home">${solid("paw")}</a>
+    <nav class="nav">${NAV.map(([k, label, ic]) => {
+      const active = cur === k || (k === "agents" && cur === "profile");
+      const badge = k === "notifications" && S.unread ? `<span class="badge">${S.unread}</span>` : "";
+      const glyph = active && k === "home" ? solid("home") : icon(ic);
+      return `<a class="nav-item${active ? " active" : ""}" data-go="${k}" aria-label="${label}"><span><span class="nav-icon">${glyph}${badge}</span><span class="label">${label}</span></span></a>`;
+    }).join("")}</nav>
+    <button class="btn-post-big" data-go="home" data-focus="compose" aria-label="New mission"><span class="txt">New mission</span>${icon("feather")}</button>
+    <button class="account" data-profile="system">${Avatar("system")}
+      <div class="who"><div class="bold">${AGENTS.system.name}</div><div class="muted">@${AGENTS.system.handle}</div></div>
+      <span class="acc-dots">${icon("dots")}</span></button>`;
+}
+
+/* ─── right sidebar ─────────────────────────────────────────── */
+function renderSide() {
+  const st = status();
+  const stepLabel = { todo: "Up next", active: "In progress", done: "Done" };
+  $("#side").innerHTML = `
+    <div class="search-wrap"><label class="search">${icon("search")}<input id="side-search" placeholder="Search" value="${esc(S.view.name === "explore" ? S.query : "")}"></label></div>
+    <section class="side-card"><h2>Mission</h2><div class="pad">
+      <p>${esc(MISSION.goal)}</p>
+      <button class="btn-pill btn-blue" data-restart>Restart mission</button></div></section>
+    ${S.hideSteps ? "" : `<section class="side-card"><h2>Mission steps<button class="icon-btn" data-hide-steps aria-label="Hide mission steps">${icon("close")}</button></h2>
+      ${MISSION.steps.map((name, i) => {
+        const posts = S.shown.filter((e) => e._step === i);
+        const who = [...new Set(posts.map((e) => e.agent))].filter((k) => k !== "system").slice(0, 3);
+        return `<div class="side-item" data-go="home"><div class="news-title">${esc(name)}</div>
+          <div class="news-meta">${who.length ? `<span class="stack">${who.map((k) => Avatar(k, "s20")).join("")}</span>` : ""}
+          <span>${stepLabel[S.stepStatus[i]]} · ${posts.length} post${posts.length === 1 ? "" : "s"}</span></div></div>`;
+      }).join("")}</section>`}
+    <section class="side-card"><h2>Where the dog is</h2>
+      <div class="map-box" data-go="map">${MapSvg()}</div>
+      ${[["Distance to goal", st.goal], ["Heading", st.heading], ["Walked so far", st.walked]].map(([m, v]) =>
+        `<div class="side-item trend" data-go="map"><div><div class="meta">Status · ${m}</div><div class="val">${v}</div></div><button class="icon-btn" aria-label="More">${icon("dots")}</button></div>`).join("")}
+      <a class="show-more" data-go="map">Show more</a></section>
+    <section class="side-card"><h2>The council</h2>
+      ${COUNCIL.slice(0, 3).map((k) => `<div class="row" data-profile="${k}">${Avatar(k)}
+        <div class="who"><div class="bold">${AGENTS[k].name}${Verified()}</div><div class="muted">@${AGENTS[k].handle}</div></div>
+        <button class="btn-pill btn-light btn-sm" data-profile="${k}">View</button></div>`).join("")}
+      <a class="show-more" data-go="agents">Show more</a></section>
+    <div class="side-foot"><span>IF Lab</span><span>Go2 Air</span><span>Sample mission, not live</span></div>`;
+}
+
+/* ─── views ─────────────────────────────────────────────────── */
+const VIEWS = {
+  home() {
+    return `<div class="top">${Tabs([["live", "Live"], ["decisions", "Decisions"]], S.view.tab || "live", false, true)}</div>
+      <div class="compose">${Avatar("system")}<div class="compose-body">
+        <textarea id="compose" rows="1" placeholder="Give the dog a new mission…" maxlength="200"></textarea>
+        <div class="compose-tools"><div class="icons">
+          ${["image", "gif", "poll", "emoji", "sched", "pin", "flag"].map((n) => `<button class="icon-btn" aria-label="${n}" tabindex="-1">${icon(n)}</button>`).join("")}
+        </div><button class="btn-pill btn-light" id="compose-post" disabled>Post</button></div></div></div>
+      <div id="list"></div>`;
+  },
+  homeList() {
+    const decisions = ["proposal", "objection", "approval", "summary", "mission"];
+    const evs = S.view.tab === "decisions" ? S.shown.filter((e) => decisions.includes(e.kind)) : S.shown;
+    return PostList(evs, "Nothing yet", "Posts from the council show up here as the mission runs.");
+  },
+
+  explore() {
+    return `<div class="top"><div class="title-bar"><label class="search" style="flex:1">${icon("search")}
+      <input id="explore-search" placeholder="Search the council's posts" value="${esc(S.query)}"></label></div></div><div id="list"></div>`;
+  },
+  exploreList() {
+    const q = S.query.trim().toLowerCase();
+    if (!q) return `<div class="empty"><h3>Search the mission</h3><p>Try “chair”, “veto” or “wall”.</p></div>`;
+    const hits = S.shown.filter((e) => [strip(e.text), AGENTS[e.agent].name, KIND[e.kind], e.action?.tool, e.action?.result].join(" ").toLowerCase().includes(q));
+    return PostList(hits, `No results for “${esc(S.query)}”`, "Try a different word, or wait for more posts.");
+  },
+
+  notifications() {
+    return `<div class="top">${TitleBar("Notifications")}${Tabs([["all", "All"], ["vetoes", "Vetoes"]], S.view.tab || "all")}</div><div id="list"></div>`;
+  },
+  notificationsList() {
+    const notes = [];
+    for (const e of S.shown) {
+      for (const [who, v] of e.votes || []) notes.push({ e, who, kind: v === "yes" ? "ok" : "no", line: `<b>${AGENTS[who].name}</b> ${v === "yes" ? "approved" : "vetoed"} ${AGENTS[e.agent].name}'s proposal` });
+      if (e.kind === "check") notes.push({ e, who: e.agent, kind: "chk", line: `<b>${AGENTS[e.agent].name}</b> ran a check` });
+    }
+    const list = (S.view.tab === "vetoes" ? notes.filter((n) => n.kind === "no") : notes).reverse();
+    if (!list.length) return `<div class="empty"><h3>Nothing to see here yet</h3><p>Approvals, vetoes and checks show up here.</p></div>`;
+    return list.map((n) => `<div class="note"><div class="kind-ico ${n.kind}">${icon(n.kind === "chk" ? "ok" : n.kind)}</div>
+      <div class="note-body">${Avatar(n.who, "s32")}<div class="line">${n.line}</div><div class="quoted">${strip(n.e.text)}</div></div></div>`).join("");
+  },
+
+  agents() {
+    return `<div class="top">${TitleBar("Agents", "5 on the council")}</div>
+      ${["system", ...COUNCIL].map((k) => `<div class="row" data-profile="${k}" style="align-items:flex-start">${Avatar(k)}
+        <div class="who"><div class="bold">${AGENTS[k].name}${Verified()}</div><div class="muted">@${AGENTS[k].handle}</div><div class="bio">${AGENTS[k].bio}</div></div>
+        <button class="btn-pill btn-light btn-sm" data-profile="${k}">View</button></div>`).join("")}`;
+  },
+
+  profile() {
+    const k = S.view.agent, a = AGENTS[k];
+    const mine = S.shown.filter((e) => e.agent === k);
+    const given = S.shown.flatMap((e) => (e.votes || []).filter((v) => v[0] === k));
+    return `<div class="top">${TitleBar(a.name, `${mine.length} post${mine.length === 1 ? "" : "s"}`, true)}</div>
+      <div data-agent="${k}"><div class="banner"></div></div>
+      <div class="profile-top"><div class="profile-row">${Avatar(k, "s134")}
+        <button class="btn-pill btn-outline">Following</button></div>
+        <div class="profile-name">${a.name}<span class="role-pill">${Verified()}${a.role}</span></div>
+        <div class="muted">@${a.handle}</div>
+        <p class="profile-bio">${a.bio}</p>
+        <div class="profile-meta">${k === "system" ? `<span>${icon("pin")}IF Lab</span>` : `<span>${icon("cpu")}claude-haiku-5-5</span>`}${k === "pilot" ? `<span>${icon("tool")}look, move, turn, pose, trick</span>` : ""}<span>${icon("cal")}Joined November 2026</span></div>
+        <div class="profile-stats"><span><b>${given.filter((v) => v[1] === "yes").length}</b> Approvals</span><span><b>${given.filter((v) => v[1] === "no").length}</b> Vetoes</span></div>
+      </div>
+      ${Tabs([["posts", "Posts"], ["replies", "Replies"], ["actions", "Actions"]], S.view.tab || "posts", true)}
+      <div id="list"></div>`;
+  },
+  profileList() {
+    const k = S.view.agent, tab = S.view.tab || "posts";
+    let evs = S.shown.filter((e) => e.agent === k);
+    if (tab === "replies") evs = evs.filter((e) => e.reply_to);
+    if (tab === "actions") evs = evs.filter((e) => e.action);
+    const what = { posts: "posts", replies: "replies", actions: "actions" }[tab];
+    return PostList(evs, `No ${what} yet`, `When @${AGENTS[k].handle} has ${what}, they show up here.`);
+  },
+
+  map() {
+    return `<div class="top">${TitleBar("Map", "Position from the dog's odometry", true)}</div><div id="list"></div>`;
+  },
+  mapList() {
+    const st = status();
+    return `<div style="padding:12px 16px">${MapSvg()}</div>
+      ${[["Distance to goal", st.goal], ["Heading", st.heading], ["Walked so far", st.walked], ["Actions taken", st.actions]].map(([m, v]) =>
+        `<div class="side-item trend" style="cursor:default"><div><div class="meta">Status · ${m}</div><div class="val">${v}</div></div></div>`).join("")}`;
+  },
+
+  log() {
+    return `<div class="top">${TitleBar("Log", "One JSON line per post, the format the agents will write", true)}</div><div id="list"></div>`;
+  },
+  logList() {
+    if (!S.shown.length) return `<div class="empty"><h3>No lines yet</h3><p>Each post adds a line here.</p></div>`;
+    return `<pre class="log">${S.shown.map(({ _at, _step, ...e }) => esc(JSON.stringify({ t: new Date(_at).toISOString(), ...e }))).join("\n")}</pre>`;
+  },
+
+  more() {
+    return `<div class="top">${TitleBar("Playback", "This page replays a sample mission", true)}</div>
+      <h3 class="section-title">Speed</h3>
+      ${[1, 2, 4].map((v) => `<div class="row" data-speed="${v}"><div class="who">${v}×${v === 1 ? " (one post every 2 s)" : ""}</div><span class="radio${S.speed === v ? " on" : ""}"></span></div>`).join("")}
+      <h3 class="section-title">Mission</h3>
+      <div class="row" data-restart><div class="who">Restart mission</div>${icon("restart")}</div>
+      <div class="row" data-toggle-play><div class="who">${S.playing ? "Pause" : "Resume"} playback</div>${solid(S.playing ? "pause" : "play")}</div>`;
+  },
+};
+
+function renderList() {
+  const fn = VIEWS[S.view.name + "List"];
+  const el = $("#list");
+  if (fn && el) el.innerHTML = fn();
+}
+function renderView() {
+  $("#view").innerHTML = VIEWS[S.view.name]();
+  renderList();
+  renderNav();
+  renderSide();
+}
+function go(name, extra = {}) {
+  S.view = { name, ...extra };
+  if (name === "notifications") S.unread = 0;
+  renderView();
+  window.scrollTo(0, 0);
+}
+
+/* ─── playback ──────────────────────────────────────────────── */
+function reset(goal = DEFAULT_GOAL) {
+  clearTimeout(S.timer);
+  MISSION.goal = goal;
+  Object.assign(S, { shown: [], byId: {}, i: 0, path: [], walked: 0, actions: 0, step: 0, unread: 0, newestId: null,
+    stepStatus: MISSION.steps.map(() => "todo") });
+  renderView();
+  schedule(500);
 }
 
 function schedule(ms) {
-  clearTimeout(state.timer);
-  if (!state.playing || state.i >= SAMPLE_EVENTS.length) return;
-  state.timer = setTimeout(() => { push(SAMPLE_EVENTS[state.i++]); schedule(BASE_DELAY / state.speed); }, ms);
+  clearTimeout(S.timer);
+  if (!S.playing || S.i >= SAMPLE_EVENTS.length) return;
+  S.timer = setTimeout(() => { post(SAMPLE_EVENTS[S.i++]); schedule(DELAY / S.speed); }, ms);
 }
 
-function push(ev) {
-  $("#empty").hidden = true;
-  const byId = Object.fromEntries(SAMPLE_EVENTS.map((e) => [e.id, e]));
-  const a = AGENTS[ev.agent];
-
-  let html = `${avatar(ev.agent, true)}<div>
-    <div class="byline"><span class="name">${a.name}</span><span class="handle">${a.handle}</span>
-      <span class="kind" data-kind="${ev.kind}">${KIND_LABEL[ev.kind] || ev.kind}</span>
-      <time>step ${ev.id}</time></div>`;
-  const parent = ev.reply_to && byId[ev.reply_to];
-  if (parent) html += `<div class="reply-to">Replying to <b>${AGENTS[parent.agent].handle}</b></div>`;
-  html += `<p class="text">${ev.text}</p>`;
-  if (parent && (ev.kind === "objection" || ev.kind === "approval")) {
-    html += `<div class="quote"><span class="qwho">${AGENTS[parent.agent].name}:</span> ${parent.text}</div>`;
+function post(src) {
+  const ev = { ...src, _at: Date.now(), _step: S.step };
+  if (ev.kind === "mission") ev.text = `New mission: <b>${esc(MISSION.goal)}</b>\nObstacle avoidance on. 150 steps max.`;
+  if (ev.step_active != null) { S.stepStatus[ev.step_active] = "active"; S.step = ev._step = ev.step_active; }
+  if (ev.step_done != null) S.stepStatus[ev.step_done] = "done";
+  if (ev.action) S.actions++;
+  if (ev.pose) {
+    const prev = S.path.at(-1);
+    if (prev) S.walked += Math.hypot(ev.pose.x - prev.x, ev.pose.y - prev.y);
+    S.path.push(ev.pose);
   }
-  if (ev.action) {
-    const args = Object.entries(ev.action.args).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ");
-    html += `<div class="action"><div class="call"><span>${ev.action.tool}(${args})</span></div>
-      ${ev.action.frame ? `<div class="frame">${ev.action.frame}</div>` : ""}
-      <div class="result${ev.action.ok === false ? " bad" : ""}">${ev.action.result}</div></div>`;
-  }
-  if (ev.votes) {
-    html += `<div class="votes">${ev.votes.map(([who, v]) =>
-      `<span class="vote${v === "no" ? " no" : ""}" data-agent="${who}"><span class="dot">${AGENTS[who].initial}</span>${AGENTS[who].name} ${v === "no" ? "vetoed" : "approved"}</span>`).join("")}</div>`;
-  }
-  html += `</div>`;
-
-  const li = document.createElement("li");
-  li.className = "post is-new";
-  li.dataset.agent = ev.agent;
-  li.dataset.id = ev.id;
-  li.innerHTML = html;
-  $("#feed").prepend(li);
-
-  // who's speaking
-  document.querySelectorAll(".agents li").forEach((n) => n.classList.toggle("speaking", n.dataset.agent === ev.agent));
-  if (ev.agent !== "system") {
-    state.tally[ev.agent] = (state.tally[ev.agent] || 0) + 1;
-    const max = Math.max(...Object.values(state.tally));
-    document.querySelectorAll("#tally .row").forEach((r) => {
-      const n = state.tally[r.dataset.agent] || 0;
-      r.querySelector(".n").textContent = n;
-      r.querySelector(".bar i").style.width = `${(n / max) * 100}%`;
-    });
-  }
-
-  // mission steps
-  const steps = document.querySelectorAll("#steps li");
-  if (ev.step_done != null) steps[ev.step_done].classList.replace("active", "done") || steps[ev.step_done].classList.add("done");
-  if (ev.step_active != null) steps[ev.step_active].classList.add("active");
-
-  if (ev.action) state.actions++;
-  if (ev.pose) movePose(ev);
-  updateStats(ev.pose ? ev.pose : state.path.at(-1));
+  if (S.view.name !== "notifications") S.unread += (ev.votes || []).length + (ev.kind === "check" ? 1 : 0);
+  S.shown.push(ev);
+  S.byId[ev.id] = ev;
+  S.newestId = ev.id;
+  renderList();
+  renderNav();
+  if (document.activeElement?.id !== "side-search") renderSide();
 }
 
-function movePose(ev) {
-  const p = ev.pose;
-  const prev = state.path.at(-1);
-  if (prev) state.walked += Math.hypot(p.x - prev.x, p.y - prev.y);
-  state.path.push(p);
-  trailEl.setAttribute("points", state.path.map((q) => `${q.x},${q.y}`).join(" "));
-  dogEl.style.opacity = 1;
-  dogEl.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${p.h}deg)`;
-  if (ev.action) {
-    const pin = svg("circle", { class: "pin", cx: p.x, cy: p.y, r: 0.07, "data-id": ev.id, style: `fill: var(--${ev.agent})` }, pinsEl);
-    pin.addEventListener("mouseenter", () => highlight(ev.id, true));
-    pin.addEventListener("mouseleave", () => highlight(ev.id, false));
-  }
-}
-
-function highlight(id, on) {
-  document.querySelectorAll(`[data-id="${id}"]`).forEach((n) => n.classList.toggle("hl", on));
-}
-$("#feed").addEventListener("mouseover", (e) => { const p = e.target.closest(".post"); if (p) highlight(p.dataset.id, true); });
-$("#feed").addEventListener("mouseout", (e) => { const p = e.target.closest(".post"); if (p) highlight(p.dataset.id, false); });
-
-function updateStats(p) {
-  const g = MISSION.goalZone;
-  $("#s-goal").textContent = p ? `${Math.max(0, g.x - p.x).toFixed(1)} m` : "–";
-  $("#s-heading").textContent = p ? `${Math.round(p.h)}°` : "–";
-  $("#s-walked").textContent = p ? `${state.walked.toFixed(1)} m` : "–";
-  $("#s-actions").textContent = state.actions;
-}
-
-/* ─── controls ──────────────────────────────────────────────── */
-$("#btn-play").addEventListener("click", (e) => {
-  state.playing = !state.playing;
-  e.currentTarget.textContent = state.playing ? "Pause" : "Play";
-  e.currentTarget.setAttribute("aria-pressed", state.playing);
-  $("#live").classList.toggle("paused", !state.playing);
-  $("#live").textContent = state.playing ? "Live" : "Paused";
+function setPlaying(on) {
+  S.playing = on;
+  const b = $("#fab-play");
+  b.innerHTML = solid(on ? "pause" : "play");
+  b.setAttribute("aria-label", on ? "Pause playback" : "Resume playback");
   schedule(300);
-});
-const SPEEDS = [1, 2, 4];
-$("#btn-speed").addEventListener("click", (e) => {
-  state.speed = SPEEDS[(SPEEDS.indexOf(state.speed) + 1) % SPEEDS.length];
-  e.currentTarget.textContent = `${state.speed}×`;
-  schedule(BASE_DELAY / state.speed);
-});
-$("#btn-restart").addEventListener("click", reset);
-$("#theme").addEventListener("click", () => {
-  const root = document.documentElement;
-  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  root.dataset.theme = dark ? "light" : "dark";
-});
+  if (S.view.name === "more") renderView();
+}
+function setSpeed(v) {
+  S.speed = v;
+  $("#fab-speed .lbl").textContent = `${v}×`;
+  schedule(DELAY / v);
+  if (S.view.name === "more") renderView();
+}
 
+/* ─── events ────────────────────────────────────────────────── */
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#compose-post")) {
+    const goal = $("#compose").value.trim();
+    if (goal) reset(/[.!?]$/.test(goal) ? goal : goal + ".");
+    return;
+  }
+  const t = e.target.closest("[data-go],[data-profile],[data-tab],[data-restart],[data-hide-steps],[data-speed],[data-toggle-play]");
+  if (!t) return;
+  e.preventDefault();
+  if (t.dataset.profile) return go("profile", { agent: t.dataset.profile });
+  if (t.dataset.go) { go(t.dataset.go); if (t.dataset.focus) $("#compose")?.focus(); return; }
+  if (t.dataset.tab) { S.view.tab = t.dataset.tab; return renderView(); }
+  if (t.hasAttribute("data-restart")) return reset(MISSION.goal);
+  if (t.hasAttribute("data-hide-steps")) { S.hideSteps = true; return renderSide(); }
+  if (t.dataset.speed) return setSpeed(Number(t.dataset.speed));
+  if (t.hasAttribute("data-toggle-play")) return setPlaying(!S.playing);
+});
+document.addEventListener("input", (e) => {
+  if (e.target.id === "compose") $("#compose-post").disabled = !e.target.value.trim();
+  if (e.target.id === "explore-search") { S.query = e.target.value; renderList(); }
+  if (e.target.id === "side-search") {
+    S.query = e.target.value;
+    if (S.view.name !== "explore") { go("explore"); const i = $("#explore-search"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+    else { $("#explore-search").value = S.query; renderList(); }
+  }
+});
+$("#fab-play").addEventListener("click", () => setPlaying(!S.playing));
+$("#fab-speed").addEventListener("click", () => setSpeed([1, 2, 4][([1, 2, 4].indexOf(S.speed) + 1) % 3]));
+setInterval(() => document.querySelectorAll("time[data-at]").forEach((t) => (t.textContent = ago(+t.dataset.at))), 1000);
+
+setPlaying(true);
 reset();
 </script>
 </body>

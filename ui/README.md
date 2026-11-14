@@ -1,14 +1,27 @@
 # Council feed UI
 
-A Twitter-style feed for the showcase. The audience sees the agents propose, question, veto and run each move the dog makes, alongside a top-down map of where the dog has walked.
+A feed for the showcase, laid out like the desktop X (Twitter) timeline. The audience sees the agents propose, question, veto and run each move the dog makes, alongside a top-down map of where the dog has walked.
 
 **Status: layout only.** `feed.html` plays back a scripted sample mission (`SAMPLE_EVENTS` in the file). It isn't connected to the dog or to any agent yet.
 
 ## Run it
 
-Open `ui/feed.html` in a browser. There's no build step and nothing to install. Fonts load from Google Fonts. Without internet the page falls back to system fonts and still works.
+Open `ui/feed.html` in a browser. There's no build step, nothing to install and nothing loaded from the internet.
 
-Controls: **Pause/Play**, **speed** (1×, 2×, 4×) and **Restart**. Hovering a post highlights where that action happened on the map.
+It uses X's dark theme and column widths (275 / 600 / 350 px), but its own logo, icons and content.
+
+| X element | Here |
+|---|---|
+| Left nav | Home, Explore (search posts), Notifications (approvals, vetoes, checks), Agents, Map, Log (raw JSON lines), More (playback settings) |
+| Account switcher | The dog, `@robodog` |
+| Compose box | Type a new mission and press **Post** to restart the replay with it |
+| For you / Following | **Live** (every post) / **Decisions** (proposals, vetoes, approvals) |
+| Post actions | Replies, approvals (green), vetoes (pink), step number |
+| Profiles | One per agent, with Posts / Replies / Actions tabs |
+| Right sidebar | Mission, mission steps, map and dog status, the council |
+| Floating buttons | Pause/play and playback speed (1×, 2×, 4×) |
+
+Below 1280 px wide the nav collapses to icons, and below 1000 px the right sidebar hides, as on X.
 
 ## The agents
 
