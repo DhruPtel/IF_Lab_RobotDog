@@ -1,0 +1,8 @@
+.env
+.env.*
+.venv/
+runs/
+__pycache__/
+*.pyc
+unitree_webrtc_connect/
+plan.json
