@@ -13,7 +13,7 @@ It uses X's dark theme and column widths (275 / 600 / 350 px), but its own logo,
 | X element | Here |
 |---|---|
 | Left nav | Home, Explore (search posts), Notifications (approvals, vetoes, checks), Agents, Map, Log (raw JSON lines), More (playback settings) |
-| Account switcher | The dog, `@robodog` |
+| Account switcher | Grayson, the dog (`@grayson`). His profile has a photo avatar and banner (`ui/img/`) and a pinned post with his Vimeo video. |
 | Compose box | Type a new mission and press **Post** to restart the replay with it |
 | For you / Following | **Live** (every post) / **Decisions** (proposals, vetoes, approvals) |
 | Post actions | Replies, approvals (green), vetoes (pink), step number |
