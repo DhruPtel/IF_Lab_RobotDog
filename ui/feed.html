@@ -72,6 +72,7 @@ svg.i.fill { fill: currentColor; stroke: none; }
 .logo { width: 52px; height: 52px; margin-top: 2px; border-radius: 9999px; display: grid; place-items: center; color: var(--text); }
 .logo:hover { background: var(--hover); }
 .logo svg { width: 30px; height: 30px; }
+.logo img { width: 36px; height: 36px; object-fit: contain; filter: invert(1); }
 .nav { display: flex; flex-direction: column; margin-top: 2px; }
 .nav-item { display: flex; padding: 0; color: var(--text); }
 .nav-item:hover { text-decoration: none; }
@@ -619,7 +620,7 @@ const NAV = [
 function renderNav() {
   const cur = S.view.name;
   $("#nav").innerHTML = `
-    <a class="logo" data-go="home" aria-label="Home">${solid("paw")}</a>
+    <a class="logo" data-go="home" aria-label="IF Lab, home"><img src="img/if-lab-logo.png" alt="IF Lab"></a>
     <nav class="nav">${NAV.map(([k, label, ic]) => {
       const active = cur === k || (k === "agents" && cur === "profile");
       const badge = k === "notifications" && S.unread ? `<span class="badge">${S.unread}</span>` : "";
