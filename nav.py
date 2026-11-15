@@ -17,6 +17,7 @@ from robot import RTC_TOPIC, QuitRequested
 TURN_SPEED = 0.5          # turn stick deflection
 TURN_TOL_DEG = 5          # stop this close to the requested rotation
 TURN_TIMEOUT_S = 8        # per 90 deg of requested rotation
+WRONG_WAY_DEG = 20        # abort a turn that goes this far the wrong way
 TURN_FALLBACK_S = 2.6     # seconds per 90 deg when there's no IMU (uncalibrated)
 FRAME_WIDTH = 640
 STALE_S = 1.0
@@ -143,6 +144,10 @@ class Nav:
             h = self.heading()
             turned += wrap180(h - prev)
             prev = h
+            if turned * delta < 0 and abs(turned) >= WRONG_WAY_DEG:
+                print(f"\nTURN ABORTED: asked {delta:+.0f} deg, went {turned:+.0f} deg "
+                      "the wrong way - check the yaw sign in robot.drive()")
+                break
             if abs(turned) >= abs(delta) - TURN_TOL_DEG:
                 break
             self.robot.drive(0, 0, z)

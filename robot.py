@@ -269,11 +269,13 @@ class Robot:
         x, y, z = clamp(x, MAX_SPEED), clamp(y, MAX_SPEED), clamp(z, MAX_YAW)
         path = self.path_name()
         if path == "avoid-joystick":
-            # obstacles_avoid example: ly+ = forward, lx+ = strafe right,
-            # rx+ = turn left. Stick deflection, clamped to [-1, 1].
+            # obstacles_avoid example: ly+ = forward, lx+ = strafe right.
+            # The example labels rx+ as "turn left", but on our dog rx+ turns
+            # RIGHT (+90 asked, -86 measured, over 23 turns), so z (yaw-left)
+            # is negated. Stick deflection, clamped to [-1, 1].
             self.conn.datachannel.pub_sub.publish_without_callback(JOY_TOPIC, {
                 "lx": clamp(-y, 1.0), "ly": clamp(x, 1.0),
-                "rx": clamp(z, 1.0), "ry": 0.0, "keys": 0})
+                "rx": clamp(-z, 1.0), "ry": 0.0, "keys": 0})
         elif path == "avoid-api":
             self._noreply(AVOID_TOPIC, OBSTACLES_AVOID_API["MOVE"],
                           {"x": x, "y": y, "yaw": z, "mode": 0})
